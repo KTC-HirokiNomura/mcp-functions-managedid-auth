@@ -55,6 +55,9 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
+      - name: Checkout (for consistent workspace path)
+        uses: actions/checkout@v4
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
@@ -71,6 +74,18 @@ jobs:
           fi
           echo "Final layout:" 
           find . -maxdepth 3 -type f -name host.json -print
+          echo "Ensure functions-py exists:" 
+          if [ ! -d functions-py ]; then
+            echo "ERROR: functions-py directory not found at $(pwd)" >&2
+            ls -al
+            exit 1
+          fi
+          echo "functions-py contents:"; ls -al functions-py
+          if [ ! -f functions-py/host.json ]; then
+            echo "ERROR: host.json missing under functions-py" >&2
+            find functions-py -maxdepth 3 -type f -print
+            exit 1
+          fi
         
       - name: Login to Azure
         uses: azure/login@v2
