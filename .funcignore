@@ -1,0 +1,12 @@
+.venv/
+**/__pycache__/
+*.pyc
+.git/
+.gitignore
+README.md
+# 仮に将来 node 等を混在させる場合の一般的除外
+node_modules/
+# 開発用 Azurite ローカルデータは不要
+functions-py/__azurite_db_*/
+functions-py/__blobstorage__/
+functions-py/__queuestorage__/

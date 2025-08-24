@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  PYTHON_VERSION: '3.12' # set this to the python version to use (supports 3.6, 3.7, 3.8)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # Python Functions プロジェクトディレクトリ
+  PYTHON_VERSION: '3.12'
   PROJECT_SUBPATH: 'functions-py'
 
 jobs:
@@ -30,29 +30,22 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and activate virtual environment, install dependencies
+      - name: Create and activate virtual environment, install dependencies (検証/テスト用途)
         run: |
           python -m venv .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r ${{ env.PROJECT_SUBPATH }}/requirements.txt
-        # 変更: 仮想環境を .venv に統一し、functions-py/requirements.txt を使って依存関係をインストール
-        # 目的  : デプロイパッケージにvenvが混入しないように依存を事前解決
+        # 目的: requirements の整合性検証 (artifact には .venv を含めない)
 
       # Optional: Add step to run tests here
 
-      - name: Zip artifact for deployment
-        run: |
-          cd ${{ env.PROJECT_SUBPATH }}
-          zip release.zip ./* -r
-
-      - name: Upload artifact for deployment job
+      - name: Upload project directory as artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: ${{ env.PROJECT_SUBPATH }}
+          if-no-files-found: error
 
   deploy:
     runs-on: ubuntu-latest
@@ -66,11 +59,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      - name: Unzip artifact for deployment
-        run: |
-          unzip release.zip
-          rm release.zip
         
       - name: Login to Azure
         uses: azure/login@v2
@@ -86,4 +74,5 @@ jobs:
           app-name: 'mcp-func-test'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          respect-funcignore: true
           
