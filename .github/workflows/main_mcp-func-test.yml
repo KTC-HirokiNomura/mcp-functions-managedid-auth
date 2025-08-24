@@ -11,7 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # デプロイ対象ディレクトリ (host.json が存在するフォルダ)
+  # デプロイに使用する ZIP ファイル名（ルートに host.json / requirements.txt を含む形式で生成）
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'release.zip'
   PYTHON_VERSION: '3.12'
 
 jobs:
@@ -24,23 +25,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+      # （任意）テストを追加したい場合は、この前に setup-python / pip install を追加してください。
 
-      - name: Create and start virtual environment
+      - name: Create deployment zip (functions-py contents as root)
         run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies (for optional tests)
-        run: pip install -r functions-py/requirements.txt
-
-      # Optional: Add step to run tests here
-
-      - name: Zip artifact for deployment (functions-py only)
-        run: zip -r release.zip functions-py
+          (cd functions-py && zip -r ../release.zip .)
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -63,11 +52,6 @@ jobs:
         with:
           name: python-app
 
-      - name: Unzip artifact for deployment
-        run: |
-          unzip release.zip
-          rm release.zip
-        
       - name: Login to Azure
         uses: azure/login@v2
         with:
