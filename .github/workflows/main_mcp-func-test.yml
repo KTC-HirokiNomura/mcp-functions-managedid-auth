@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  # デプロイに使用する ZIP ファイル名（ルートに host.json / requirements.txt を含む形式で生成）
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'release.zip'
+  # リモートビルド対象の Functions プロジェクトフォルダ
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py'
   PYTHON_VERSION: '3.12'
 
 jobs:
@@ -27,17 +27,11 @@ jobs:
 
       # （任意）テストを追加したい場合は、この前に setup-python / pip install を追加してください。
 
-      - name: Create deployment zip (functions-py contents as root)
-        run: |
-          (cd functions-py && zip -r ../release.zip .)
-
-      - name: Upload artifact for deployment job
+      - name: Upload project folder artifact (remote build will install requirements)
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: functions-py
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,10 +41,16 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
-      - name: Download artifact from build job
+      - name: Download project artifact
         uses: actions/download-artifact@v4
         with:
           name: python-app
+          path: ./
+
+      - name: List downloaded files (debug)
+        run: |
+          echo "Downloaded contents:" 
+          ls -R
 
       - name: Login to Azure
         uses: azure/login@v2
