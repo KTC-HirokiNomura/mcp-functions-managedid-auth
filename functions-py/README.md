@@ -8,7 +8,7 @@
 2. 汎用 (Generic) トリガー ツール: `get_current_time`  
    - 現在の UTC 時刻を ISO8601 形式で返す **MCP (Model Context Protocol) ツール想定** の関数。
 3. 汎用 (Generic) トリガー ツール: `get_weather`  
-   - 都市名と基準時刻を入力として wttr.in の無料 API から天気を取得し簡易 JSON を返す関数。
+   - 都市名と基準時刻を入力として簡易な天気情報を返す関数（現在は外部 API を呼ばないダミー実装）。
 
 > `mcpToolTrigger` は Extension Bundle Experimental を利用した汎用トリガー定義です。通常の HTTP ルートは公開されません (カスタム バインディング / 拡張経由で呼び出される想定)。
 
@@ -127,7 +127,7 @@ print(get_weather({"city": "Tokyo", "time": "2025-08-20T00:00:00Z"}))
 ## 実装上のポイント
 - `ToolProperty` クラスでツールの引数メタデータを定義し JSON 化。
 - `get_weather` では受信 `context` が文字列 JSON / dict どちらでも安全にパースする防御的実装。
-- 外部 API 呼び出しは `requests.get(timeout=5)` で短いタイムアウト設定。`RequestException` を捕捉し JSON エラー返却。
+- 現在の `get_weather` は外部 API を呼ばず、ランダム生成されたダミーの天気情報を返します（テスト用）。将来的に外部 API を戻す場合は retry ロジック（既に一部実装済）を活用できます。
 - 文字列化には `json.dumps(..., ensure_ascii=False)` を一部使用し日本語保持。
 - Extension Bundle: `Microsoft.Azure.Functions.ExtensionBundle.Experimental` を利用 (将来的な互換性変更に留意)。
 

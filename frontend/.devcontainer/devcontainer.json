@@ -1,0 +1,18 @@
+{
+  "name": "Go Eino Azure DevContainer",
+  "image": "mcr.microsoft.com/devcontainers/go:1-1",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-azurefunctions",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  },
+  "postCreateCommand": "go mod tidy || true",
+  "remoteUser": "vscode"
+}
