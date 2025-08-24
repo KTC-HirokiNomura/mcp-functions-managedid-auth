@@ -11,7 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # デプロイ対象サブフォルダに変更
+  # アーカイブ内ルートに配置するため '.' を指定
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
   PYTHON_VERSION: '3.12' # 使用する Python バージョン (3.6, 3.7, 3.8 をサポートと記載)
 
 jobs:
