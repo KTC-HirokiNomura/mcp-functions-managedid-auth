@@ -1,6 +1,6 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
+# Azure Functions デプロイ用 GitHub Action のドキュメント: https://github.com/azure/functions-action
+# Azure 向けの他の GitHub Actions: https://github.com/Azure/actions
+# Python / GitHub Actions / Azure Functions に関する詳細: https://aka.ms/python-webapps-actions
 
 name: Build and deploy Python project to Azure Function App - func-mcp-poc-001
 
@@ -11,14 +11,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  PYTHON_VERSION: '3.12' # set this to the python version to use (supports 3.6, 3.7, 3.8)
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # デプロイ対象サブフォルダに変更
+  PYTHON_VERSION: '3.12' # 使用する Python バージョン (3.6, 3.7, 3.8 をサポートと記載)
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # actions/checkout に必要
 
     steps:
       - name: Checkout repository
@@ -34,13 +34,18 @@ jobs:
           python -m venv venv
           source venv/bin/activate
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install dependencies (functions-py)
+        run: pip install -r functions-py/requirements.txt
 
-      # Optional: Add step to run tests here
+      # 任意: ここでテスト実行ステップを追加できます
 
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+      - name: Zip artifact for deployment (functions-py only, exclude emulator data & local settings)
+        run: |
+          zip -r release.zip functions-py \
+            -x 'functions-py/__azurite_db_*' \
+            -x 'functions-py/__blobstorage__/*' \
+            -x 'functions-py/__queuestorage__/*' \
+            -x 'functions-py/local.settings.json'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -54,8 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write # JWT (OIDC トークン) 要求に必要
+      contents: read # actions/checkout に必要
 
     steps:
       - name: Download artifact from build job
@@ -82,4 +87,3 @@ jobs:
           app-name: 'func-mcp-poc-001'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          
