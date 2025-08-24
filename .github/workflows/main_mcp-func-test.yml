@@ -59,6 +59,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
+
+      - name: Adjust artifact directory structure
+        run: |
+          echo "Listing after download" 
+          ls -al
+          if [ -d python-app/functions-py ]; then
+            echo "Moving python-app/functions-py -> functions-py"
+            rm -rf functions-py || true
+            mv python-app/functions-py ./functions-py
+          fi
+          echo "Final layout:" 
+          find . -maxdepth 3 -type f -name host.json -print
         
       - name: Login to Azure
         uses: azure/login@v2
@@ -75,4 +87,5 @@ jobs:
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           respect-funcignore: true
+          remote-build: true
           
