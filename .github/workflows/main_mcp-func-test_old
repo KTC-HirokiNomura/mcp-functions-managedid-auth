@@ -1,0 +1,95 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
+
+name: Build and deploy Python project to Azure Function App - mcp-func-test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  # リモートビルド対象の Functions プロジェクトフォルダ
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py'
+  PYTHON_VERSION: '3.12'
+  # リソースグループ名を設定してください（App Settings 設定用。未使用なら削除可）
+  AZURE_RESOURCE_GROUP: 'REPLACE_WITH_RESOURCE_GROUP'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # （任意）テストを追加したい場合は、この前に setup-python / pip install を追加してください。
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies into .python_packages (Flex plan: no remote build)
+        run: |
+          mkdir -p functions-py/.python_packages/lib/site-packages
+          pip install --upgrade pip
+          pip install -r functions-py/requirements.txt \
+            --target functions-py/.python_packages/lib/site-packages
+          echo "Installed packages:"; ls -1 functions-py/.python_packages/lib/site-packages | head
+
+      - name: Upload project folder artifact (remote build will install requirements)
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: functions-py
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Checkout repository (ensure functions-py path exists)
+        uses: actions/checkout@v4
+
+      - name: Download project artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+          path: ./
+
+      - name: List downloaded files (debug)
+        run: |
+          echo "Downloaded contents:" 
+          ls -R
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_ABC3F4327F4D447AA50F453B92854231 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7B5AF70BDAAC439DA1490C0EAAF4B3A5 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_349001CDCCEE446A829215DE87733371 }}
+
+      - name: 'Deploy to Azure Functions'
+        uses: Azure/functions-action@v1
+        id: deploy-to-function
+        with:
+          app-name: 'mcp-func-test'
+          slot-name: 'Production'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+      # Flex Consumption ではリモートビルド/SCM_DO_BUILD_DURING_DEPLOYMENT はサポート外のため未指定
+
+    # （任意）App Settings を明示的に設定（既に設定済みならスキップ）
+    # - name: Ensure required app settings
+    #   run: |
+    #     az functionapp config appsettings set \
+    #       --name mcp-func-test \
+    #       --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+    #       --settings FUNCTIONS_WORKER_RUNTIME=python
