@@ -30,13 +30,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and start virtual environment
+      - name: Create and activate virtual environment, install dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies
-        run: pip install -r ${{PROJECT_SUBPATH}}/requirements.txt
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r ${{ env.PROJECT_SUBPATH }}/requirements.txt
+        # 変更: 仮想環境を .venv に統一し、functions-py/requirements.txt を使って依存関係をインストール
+        # 目的  : デプロイパッケージにvenvが混入しないように依存を事前解決
 
       # Optional: Add step to run tests here
 
