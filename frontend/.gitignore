@@ -1,0 +1,26 @@
+# .gitignore for frontend folder
+
+# Python virtual environment
+.venv/
+venv/
+
+# Byte-compiled
+__pycache__/
+*.pyc
+
+# Streamlit cache
+.streamlit/
+
+# Editor
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp

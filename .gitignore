@@ -1,0 +1,53 @@
+# Root-level .gitignore for the project
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# VS Code
+.vscode/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Azure Functions local settings (sensitive)
+functions-py/local.settings.json
+
+# Azurite local storage
+functions-py/__blobstorage__/
+functions-py/__queuestorage__/
+functions-py/__azurite_db*__.json
+
+# Streamlit cache / temp
+.streamlit/
+
+# JetBrains
+.idea/
+
+# node_modules (if any node frontend added later)
+node_modules/
+
+# Frontend virtualenv
+frontend/.venv/
+
+# End of root .gitignore
