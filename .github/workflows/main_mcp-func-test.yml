@@ -41,6 +41,9 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
+      - name: Checkout repository (ensure functions-py path exists)
+        uses: actions/checkout@v4
+
       - name: Download project artifact
         uses: actions/download-artifact@v4
         with:
@@ -66,3 +69,6 @@ jobs:
           app-name: 'mcp-func-test'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
+          remote-build: true
