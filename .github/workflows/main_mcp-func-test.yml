@@ -11,9 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # Python Functions プロジェクトディレクトリ
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py' # デプロイ対象ディレクトリ (host.json が存在するフォルダ)
   PYTHON_VERSION: '3.12'
-  PROJECT_SUBPATH: 'functions-py'
 
 jobs:
   build:
@@ -30,22 +29,26 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and activate virtual environment, install dependencies (検証/テスト用途)
+      - name: Create and start virtual environment
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r ${{ env.PROJECT_SUBPATH }}/requirements.txt
-        # 目的: requirements の整合性検証 (artifact には .venv を含めない)
+          python -m venv venv
+          source venv/bin/activate
+
+      - name: Install dependencies (for optional tests)
+        run: pip install -r functions-py/requirements.txt
 
       # Optional: Add step to run tests here
 
-      - name: Upload project directory as artifact
+      - name: Zip artifact for deployment (functions-py only)
+        run: zip -r release.zip functions-py
+
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: ${{ env.PROJECT_SUBPATH }}
-          if-no-files-found: error
+          path: |
+            release.zip
+            !venv/
 
   deploy:
     runs-on: ubuntu-latest
@@ -55,44 +58,22 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
-      - name: Checkout (for consistent workspace path)
-        uses: actions/checkout@v4
-
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
 
-      - name: Adjust artifact directory structure
+      - name: Unzip artifact for deployment
         run: |
-          echo "Listing after download" 
-          ls -al
-          if [ -d python-app/functions-py ]; then
-            echo "Moving python-app/functions-py -> functions-py"
-            rm -rf functions-py || true
-            mv python-app/functions-py ./functions-py
-          fi
-          echo "Final layout:" 
-          find . -maxdepth 3 -type f -name host.json -print
-          echo "Ensure functions-py exists:" 
-          if [ ! -d functions-py ]; then
-            echo "ERROR: functions-py directory not found at $(pwd)" >&2
-            ls -al
-            exit 1
-          fi
-          echo "functions-py contents:"; ls -al functions-py
-          if [ ! -f functions-py/host.json ]; then
-            echo "ERROR: host.json missing under functions-py" >&2
-            find functions-py -maxdepth 3 -type f -print
-            exit 1
-          fi
+          unzip release.zip
+          rm release.zip
         
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_ABC3F4327F4D447AA50F453B92854231 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7B5AF70BDAAC439DA1490C0EAAF4B3A5 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_349001CDCCEE446A829215DE87733371 }}
+          client-id: ${{ secrets.__clientidsecretname__ }}
+          tenant-id: ${{ secrets.__tenantidsecretname__ }}
+          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
 
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
@@ -101,6 +82,3 @@ jobs:
           app-name: 'mcp-func-test'
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          respect-funcignore: true
-          remote-build: true
-          
