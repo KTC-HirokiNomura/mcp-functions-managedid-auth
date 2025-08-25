@@ -11,9 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  # functions-py ディレクトリをそのままデプロイ (host.json が直下になる)
-  # AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py'
-  PYTHON_VERSION: '3.12' # 使用する Python バージョン (3.6, 3.7, 3.8 をサポートと記載)
+  PYTHON_VERSION: '3.12'
 
 jobs:
   build:
@@ -30,17 +28,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Create and start virtual environment
+      - name: Vendor dependencies into .python_packages
         run: |
-          python -m venv venv
-          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install --target functions-py/.python_packages/lib/site-packages -r functions-py/requirements.txt
 
-      - name: Install dependencies (functions-py)
-        run: pip install -r functions-py/requirements.txt
+      # 任意: テスト実行をここに追加可
 
-      # 任意: ここでテスト実行ステップを追加できます
-
-      - name: Zip artifact for deployment (flatten to root)
+      - name: Create deployment zip (flatten root)
         working-directory: functions-py
         run: |
           zip -r ../release.zip . \
@@ -49,13 +44,11 @@ jobs:
             -x '__queuestorage__/*' \
             -x 'local.settings.json'
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -70,11 +63,6 @@ jobs:
         with:
           name: python-app
 
-      - name: Unzip artifact for deployment
-        run: |
-          unzip release.zip
-          rm release.zip
-        
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -88,3 +76,6 @@ jobs:
           app-name: 'func-mcp-poc-001'
           slot-name: 'Production'
           package: release.zip
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
+          remote-build: false
