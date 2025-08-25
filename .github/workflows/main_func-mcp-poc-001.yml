@@ -12,7 +12,7 @@ on:
 
 env:
   # functions-py ディレクトリをそのままデプロイ (host.json が直下になる)
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py'
+  # AZURE_FUNCTIONAPP_PACKAGE_PATH: 'functions-py'
   PYTHON_VERSION: '3.12' # 使用する Python バージョン (3.6, 3.7, 3.8 をサポートと記載)
 
 jobs:
@@ -40,13 +40,14 @@ jobs:
 
       # 任意: ここでテスト実行ステップを追加できます
 
-      - name: Zip artifact for deployment (functions-py only, exclude emulator data & local settings)
+      - name: Zip artifact for deployment (flatten to root)
+        working-directory: functions-py
         run: |
-          zip -r release.zip functions-py \
-            -x 'functions-py/__azurite_db_*' \
-            -x 'functions-py/__blobstorage__/*' \
-            -x 'functions-py/__queuestorage__/*' \
-            -x 'functions-py/local.settings.json'
+          zip -r ../release.zip . \
+            -x '__azurite_db_*' \
+            -x '__blobstorage__/*' \
+            -x '__queuestorage__/*' \
+            -x 'local.settings.json'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -83,8 +84,7 @@ jobs:
 
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
-        id: deploy-to-function
         with:
           app-name: 'func-mcp-poc-001'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: release.zip
